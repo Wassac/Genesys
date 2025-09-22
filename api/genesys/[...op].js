@@ -86,9 +86,25 @@ async function removeFromIndex(id){
 }
 
 export default async function handler(req) {
-  const url = new URL(req.url);
-  const segs = url.pathname.split("/").filter(Boolean); // ["api","genesys","save"] etc.
-  const op = segs[segs.length - 1];
+  try {
+    const url = new URL(req.url);
+    const segs = url.pathname.split("/").filter(Boolean);
+    const op = segs[segs.length - 1];
+
+    if (op === "list" && req.method === "GET") {
+      const items = await loadIndex();
+      return ok({ items });
+    }
+
+    // other ops (save, get, delete, roll)...
+
+    return bad("not found", 404);
+
+  } catch (e) {
+    return bad(`server: ${e.message}`, 500);
+  }
+}
+
 
   // CORS preflight
   if (req.method === "OPTIONS") {
