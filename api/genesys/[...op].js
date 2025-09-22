@@ -82,19 +82,16 @@ function ok(obj){
 async function redis(cmd, ...args){
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
   if (!url || !token) throw new Error("Upstash env missing (URL or TOKEN not set)");
 
-  const body = JSON.stringify({ command: [cmd, ...args] });
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { Authorization:`Bearer ${token}`, "Content-Type":"application/json" },
-    body
+  // Build path: /CMD/arg1/arg2/...
+  const path = [cmd, ...args].map(a => encodeURIComponent(String(a))).join("/");
+  const res = await fetch(`${url}/${path}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` }
   });
 
-  let text = "";
-  try { text = await res.text(); } catch {}
-
+  const text = await res.text().catch(() => "");
   if (!res.ok) throw new Error(`Upstash ${res.status}: ${text || "no body"}`);
 
   try { return JSON.parse(text); }
