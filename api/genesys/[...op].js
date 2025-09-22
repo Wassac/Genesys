@@ -36,11 +36,39 @@ function ok(obj){ return new Response(JSON.stringify(obj), {headers:{"Content-Ty
 async function redis(cmd, ...args){
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    throw new Error("Upstash env missing (URL or TOKEN not set)");
+  }
+
   const body = JSON.stringify({ command: [cmd, ...args] });
-  const res = await fetch(url, { method:"POST", headers:{ Authorization:`Bearer ${token}`, "Content-Type":"application/json" }, body });
-  if(!res.ok) throw new Error("Upstash error");
-  return res.json();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body
+  });
+
+  let text;
+  try {
+    text = await res.text();
+  } catch {
+    text = "";
+  }
+
+  if (!res.ok) {
+    throw new Error(`Upstash ${res.status}: ${text || "no body"}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Upstash parse error: ${text.slice(0,200)}`);
+  }
 }
+
 
 // ---------- Index helpers ----------
 async function loadIndex(){ const ix = await redis("GET","pc:index"); return ix.result ? JSON.parse(ix.result) : []; }
