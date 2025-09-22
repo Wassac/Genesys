@@ -75,6 +75,16 @@ export default async function handler(req) {
   const apiKey = req.headers.get("x-api-key");
   if (!apiKey || apiKey !== process.env.API_KEY) return bad("unauthorized", 401);
 
+  // --- PING (no Redis; just checks env + auth) ---
+if (op === "ping" && req.method === "GET") {
+  return ok({
+    ok: true,
+    apiKeySet: !!process.env.API_KEY,
+    upstashUrlSet: !!process.env.UPSTASH_REDIS_REST_URL,
+    upstashTokenSet: !!process.env.UPSTASH_REDIS_REST_TOKEN
+  });
+}
+
   // --- SAVE (upsert) ---
   if (op === "save" && req.method === "POST") {
     const body = await req.json().catch(()=>null);
